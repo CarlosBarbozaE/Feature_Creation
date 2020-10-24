@@ -157,3 +157,55 @@ def next_day_ret(df):
 
 _, label = next_day_ret(df_pe)
 df_pe['Label'] = label
+
+#binary ,returns and accum returns
+
+def ret_div(df):
+    
+    '''
+    Return a logarithm and arithmetic daily returns
+    and daily acum daily
+    
+    '''
+    ret_ar = df.Close.pct_change().fillna(0)
+    ret_ar_acum = ret_ar.cumsum()
+    ret_log = np.log(1+ret_ar_acum).diff()
+    ret_log_acum = ret_log.cumsum()
+    
+    binary = ret_ar
+    binary[binary<0] = 0
+    binary[binary>0] = 1
+    return ret_ar  , ret_ar_acum , ret_log , ret_log_acum, binary
+
+ra , racm , rl , rlacm, binary = ret_div(df_pe)
+df_pe['returna'] , df_pe['returna_acums'] , df_pe['returnlog'] , df_pe['returnlog_acum'], df_pe['binary'] = ra , racm , rl , rlacm, binary
+
+#zscore normalization
+
+def z_score(df):
+    #zscore 
+    mean,std = df.Close.mean() , df.Close.std()
+    zscore = (df.Close-mean)/std
+
+    return zscore
+
+df_pe['zscore'] = z_score(df_pe)
+
+# diff integer
+def int_diff(df,window:'must be an arange'):
+    diff = [
+        df.Close.diff(x) for x in window
+        ]
+    return diff
+
+df_pe['diff1'] , df_pe['diff2'] , df_pe['diff3'] , df_pe['diff4'] , df_pe['diff5'] =int_diff(df_pe,np.arange(1,6))
+
+#moving averages
+def mov_averages(df,space:'must be an arange'):
+    mov_av = [
+        df.Close.rolling(w).mean() for w in space
+        ]
+    return mov_av
+
+df_pe['mova1'] , df_pe['movaf2'] , df_pe['mova3'] , df_pe['mova4'] , df_pe['mova5'] =mov_averages(df_pe,np.arange(1,6))
+    
