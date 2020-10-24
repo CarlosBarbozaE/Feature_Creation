@@ -214,3 +214,92 @@ ef quartiles(df,n_bins:int):
     bin_fxn = pd.qcut(df.Close,q=n_bins,labels=range(1,n_bins+1))
     return bin_fxn
 df_pe['quartiles'] = quartiles(df_pe,10)
+
+#FUNCIONES de CHANGE POINT DETECTION
+
+def window(data):
+    '''
+    data: Valores del activo EURUSD.
+    
+    '''
+    data = np.array(data.Close) #De los datos del activo, selecciona la columna Close y la hace un array.
+    
+    n = len(data) #Tamaño de el array de datos.
+    sigma = data.std() #Desviación estandar de los datos.
+    p = np.log(n)*sigma**2 #Penalización que tiene el modelo.
+    
+    #Pasos a realizar para el metodo de window-based.
+    algo = rpt.Window(width=32, jump=24).fit(data)
+    my_bkps = algo.predict(pen=p)
+    senal = pd.DataFrame(my_bkps)
+    
+    mean = senal.drop(len(my_bkps)-1) #Quitamos de la serie el último valor ya que no es correcto. 
+    mean = np.array(mean) #Datos generados del metodo, traidos a un array.
+    changes = mean.astype(int) #Hacer que el array contenga solo valores numericos enteros.
+
+    fecha = [] #Lista vacia para introducir fechas donde el cambio ocurrio.
+    #For para introducir los valores de la fechas en donde ocurrieron los changepoints.
+    for i in range (0, len(my_bkps)-1):
+        fecha += df_pe.index[changes[i]]
+            
+    #Esta variable sirve para crear el feature que se utilizará en el modelo.
+    feature = boolean_change_point(df_pe, changes)
+    
+    #La función regresa las fechas y los valores numericos en donde ocurrieron los cambios.
+    return fecha, changes, feature
+
+df_pe['Windows'] = window(df_pe)[2]
+
+def binary(data):
+    '''
+    data: Valores del activo EURUSD.
+    
+    '''
+    data = np.array(df_pe.Close)
+
+    n = len(data) #Tamaño de los datos dentro del array.
+    sigma = data.std() #Desviación estandar de los datos.
+    p = np.log(n)*sigma**2 #Penalización utilizada dentro del modelo.
+
+    #Pasos a realizar dentro del modelo de Binary segmentation.
+    algo = rpt.Binseg().fit(data)
+    my_bkps = algo.predict(pen=p)
+    senal = pd.DataFrame(my_bkps)
+
+    mean = senal.drop([len(my_bkps)-1]) #Quitamos de la serie el último valor ya que no es correcto.
+    mean = np.array(mean) #Valores obtenidos del modelo traidos a un array.
+
+    changes = mean.astype(int) #Valores del array anterior convertidos a numeros enteros.
+
+    fecha = [] #Lista vacia para introducir fechas deseadas.
+    #For para introducir las fechas en donde ocurrio un cambio.
+    for i in range (0, len(my_bkps)-1):
+        fecha += df_pe.index[changes[i]]
+        
+    feature = boolean_change_point(df_pe, changes)
+    
+    #La función regresa las fechas y los cambios numericos. 
+    return fecha, changes, feature
+
+df_pe['binary_c'] = binary(df_pe)[2]
+
+def zerolistmaker(n):
+    list_zeros = [0] * n #Multiplica 0's por la dimensión 'n'.
+
+    #Regresa una lista de zeros de dimensión n.
+    return list_zeros
+
+def boolean_change_point(data, changes):
+    
+    data = np.array(data.Close) #De los datos del activo, selecciona la columna Close y la hace un array.
+    #Uso de la función de 'zerolistmaker'.
+    zero = zerolistmaker(len(data)) #Crea una lista de zeros del tamaño de tus datos.
+
+    change = [int(x) for x in changes] #Cuenta cuantos cambios haras dentro de tu lista.
+    
+    #For para cambiar los datos en donde haya un cambio.
+    for i in range (0, len(change)):
+        zero[change[i]] = 1
+        
+    #Regresa una lista en donde se encuentran los cambios como 1 y los no cambios como 0. 
+    return zero
