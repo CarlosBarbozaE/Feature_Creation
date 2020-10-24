@@ -209,3 +209,8 @@ def mov_averages(df,space:'must be an arange'):
 
 df_pe['mova1'] , df_pe['movaf2'] , df_pe['mova3'] , df_pe['mova4'] , df_pe['mova5'] =mov_averages(df_pe,np.arange(1,6))
     
+ef quartiles(df,n_bins:int):
+    'Assign quartiles to data, depending of position'
+    bin_fxn = pd.qcut(df.Close,q=n_bins,labels=range(1,n_bins+1))
+    return bin_fxn
+df_pe['quartiles'] = quartiles(df_pe,10)
