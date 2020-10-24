@@ -2,7 +2,7 @@
 """
 Created on Tue Oct 20 11:57:34 2020
 
-@author: Esteban , Franck
+@authors: Esteban , Franck
 
 Creacion de Features para el dataset de entrenamiento de un modelo de ML
 que se usara en un sistema de trading diario automatizado
