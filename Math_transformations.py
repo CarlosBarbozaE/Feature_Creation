@@ -20,3 +20,4 @@ def math_transformations(df):
         df['log_'+col] = np.log(df[col].values.astype(float))
         df['log2_'+col] = np.log2(df[col].values.astype(float))
         df['log10_'+col] = np.log10(df[col].values.astype(float))
+    return df

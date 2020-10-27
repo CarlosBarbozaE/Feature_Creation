@@ -2,7 +2,7 @@
 """
 Created on Tue Oct 20 11:57:34 2020
 
-@authors: Esteban , Franck
+@author: Esteban
 
 Creacion de Features para el dataset de entrenamiento de un modelo de ML
 que se usara en un sistema de trading diario automatizado
@@ -10,15 +10,17 @@ pip install oandapyV20
 Se necesita tener Diferenciacion_fraccional en la misma ruta
 """
 import pandas as pd
+import numpy as np
 import Data
 from Diferenciacion_fraccional import least_diff
+import ruptures as rpt
 
 # Download prices from Oanda into df_pe
 instrumento = "EUR_USD"
 granularidad = "D"
 
-f_inicio = pd.to_datetime("2010-01-01 17:00:00").tz_localize('GMT')
-f_fin = pd.to_datetime("2020-10-22 17:00:00").tz_localize('GMT')
+f_inicio = pd.to_datetime("2016-01-01 17:00:00").tz_localize('GMT')
+f_fin = pd.to_datetime("2020-10-23 17:00:00").tz_localize('GMT')
 token = '40a4858c00646a218d055374c2950239-f520f4a80719d9749cc020ddb5188887'
 
 df_pe = Data.getPrices(p0_fini=f_inicio, p1_ffin=f_fin, p2_gran = "D",
@@ -158,6 +160,7 @@ def next_day_ret(df):
 _, label = next_day_ret(df_pe)
 df_pe['Label'] = label
 
+#%%
 #binary ,returns and accum returns
 
 def ret_div(df):
@@ -192,7 +195,7 @@ def z_score(df):
 df_pe['zscore'] = z_score(df_pe)
 
 # diff integer
-def int_diff(df,window:'must be an arange'):
+def int_diff(df, window: np.arange):
     diff = [
         df.Close.diff(x) for x in window
         ]
@@ -201,7 +204,7 @@ def int_diff(df,window:'must be an arange'):
 df_pe['diff1'] , df_pe['diff2'] , df_pe['diff3'] , df_pe['diff4'] , df_pe['diff5'] =int_diff(df_pe,np.arange(1,6))
 
 #moving averages
-def mov_averages(df,space:'must be an arange'):
+def mov_averages(df, space: np.arange):
     mov_av = [
         df.Close.rolling(w).mean() for w in space
         ]
@@ -209,13 +212,35 @@ def mov_averages(df,space:'must be an arange'):
 
 df_pe['mova1'] , df_pe['movaf2'] , df_pe['mova3'] , df_pe['mova4'] , df_pe['mova5'] =mov_averages(df_pe,np.arange(1,6))
     
-ef quartiles(df,n_bins:int):
+def quartiles(df,n_bins:int):
     'Assign quartiles to data, depending of position'
     bin_fxn = pd.qcut(df.Close,q=n_bins,labels=range(1,n_bins+1))
     return bin_fxn
 df_pe['quartiles'] = quartiles(df_pe,10)
 
+
 #FUNCIONES de CHANGE POINT DETECTION
+def zerolistmaker(n):
+    list_zeros = [0] * n #Multiplica 0's por la dimensión 'n'.
+
+    #Regresa una lista de zeros de dimensión n.
+    return list_zeros
+
+def boolean_change_point(data, changes):
+    
+    data = np.array(data.Close) #De los datos del activo, selecciona la columna Close y la hace un array.
+    #Uso de la función de 'zerolistmaker'.
+    zero = zerolistmaker(len(data)) #Crea una lista de zeros del tamaño de tus datos.
+
+    change = [int(x) for x in changes] #Cuenta cuantos cambios haras dentro de tu lista.
+    
+    #For para cambiar los datos en donde haya un cambio.
+    for i in range (0, len(change)):
+        zero[change[i]] = 1
+        
+    #Regresa una lista en donde se encuentran los cambios como 1 y los no cambios como 0. 
+    return zero
+
 
 def window(data):
     '''
@@ -282,24 +307,3 @@ def binary(data):
     return fecha, changes, feature
 
 df_pe['binary_c'] = binary(df_pe)[2]
-
-def zerolistmaker(n):
-    list_zeros = [0] * n #Multiplica 0's por la dimensión 'n'.
-
-    #Regresa una lista de zeros de dimensión n.
-    return list_zeros
-
-def boolean_change_point(data, changes):
-    
-    data = np.array(data.Close) #De los datos del activo, selecciona la columna Close y la hace un array.
-    #Uso de la función de 'zerolistmaker'.
-    zero = zerolistmaker(len(data)) #Crea una lista de zeros del tamaño de tus datos.
-
-    change = [int(x) for x in changes] #Cuenta cuantos cambios haras dentro de tu lista.
-    
-    #For para cambiar los datos en donde haya un cambio.
-    for i in range (0, len(change)):
-        zero[change[i]] = 1
-        
-    #Regresa una lista en donde se encuentran los cambios como 1 y los no cambios como 0. 
-    return zero
