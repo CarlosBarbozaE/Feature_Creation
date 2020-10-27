@@ -252,12 +252,34 @@ def window(data):
     n = len(data) #Tamaño de el array de datos.
     sigma = data.std() #Desviación estandar de los datos.
     p = np.log(n)*sigma**2 #Penalización que tiene el modelo.
-    
+    suma = []
     #Pasos a realizar para el metodo de window-based.
-    algo = rpt.Window(width=32, jump=24).fit(data)
+    for i in range (0,100):
+        algo = rpt.Window(width=i+10).fit(data)
+        my_bkps = algo.predict(pen=p)
+        senal = pd.DataFrame(my_bkps)
+        suma.append(my_bkps)
+    suma = pd.DataFrame(suma)
+    suma = suma.dropna()
+
+    width = list(suma.index)
+    width = width[0]
+
+    for i in range (0,100):
+        algo = rpt.Window(width=width, jump=i+1).fit(data)
+        my_bkps = algo.predict(pen=p)
+        senal = pd.DataFrame(my_bkps)
+        suma.append(my_bkps)
+    suma = pd.DataFrame(suma)
+    suma = suma.dropna()
+
+    jump = list(suma.index)
+    jump = jump[0]
+
+    algo = rpt.Window(width=width, jump=jump).fit(data)
     my_bkps = algo.predict(pen=p)
     senal = pd.DataFrame(my_bkps)
-    
+
     mean = senal.drop(len(my_bkps)-1) #Quitamos de la serie el último valor ya que no es correcto. 
     mean = np.array(mean) #Datos generados del metodo, traidos a un array.
     changes = mean.astype(int) #Hacer que el array contenga solo valores numericos enteros.
@@ -266,7 +288,7 @@ def window(data):
     #For para introducir los valores de la fechas en donde ocurrieron los changepoints.
     for i in range (0, len(my_bkps)-1):
         fecha += df_pe.index[changes[i]]
-            
+
     #Esta variable sirve para crear el feature que se utilizará en el modelo.
     feature = boolean_change_point(df_pe, changes)
     
