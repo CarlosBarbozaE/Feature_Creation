@@ -48,9 +48,6 @@ def add_all_features(df_pe):
     df_pe['diff1'] , df_pe['diff2'] , df_pe['diff3'] , df_pe['diff4'] , df_pe['diff5'] = Add_features.int_diff(df_pe,np.arange(1,6))
     df_pe['mova1'] , df_pe['movaf2'] , df_pe['mova3'] , df_pe['mova4'] , df_pe['mova5'] = Add_features.mov_averages(df_pe,np.arange(1,6))
     df_pe['quartiles'] = Add_features.quartiles(df_pe,10)
-    # Change Point Detection
-    #df_pe['Windows'] = Add_features.window(df_pe)[2]
-    #df_pe['binary_c'] = Add_features.binary(df_pe)[2]
     return df_pe
 
 def create(inicio: str, fin: str):
@@ -61,6 +58,9 @@ def create(inicio: str, fin: str):
     df_pe = add_all_features(df_pe)
     df_pe = df_pe.dropna()
     df_pe = Math_transformations.math_transformations(df_pe)
+    # Change Point Detection
+    #df_pe['Windows'] = Add_features.window(df_pe)[2]
+    #df_pe['binary_c'] = Add_features.binary(df_pe)[2]
     df_pe['Label'] = Add_features.next_day_ret(df_pe)[1]
     return df_pe
     
